@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' blob:;">
+  <title>History TV</title>
+  <link href="assets/styles/video.css" rel="stylesheet">
+  <link href="assets/styles/style.css" rel="stylesheet">
+  </head>
+  <body>
+    <section class="screen">
+      <div class="content">
+        <video id="video"
+          class="video-js" 
+          preload="auto"
+          data-setup="{}" controls>
+        </video>
+        <calendar></calendar>
+      </div>
+    </section>
+  <button>OFF</button>
+  <script src="assets/scripts/video.js"></script>
+  <script src="assets/scripts/videojs-playlist.js"></script>
+  <script src="assets/scripts/TweenMax.min.js"></script>
+  <script src="assets/scripts/lodash.min.js"></script>
+  <script src="assets/scripts/jquery.min.js"></script>
+  </body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "historytv",
+  "version": "1.0.0",
+  "description": "An archive of the country from 1890 - 1980",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "Rhodesia",
+    "Zimbabwe-Rhodesia",
+    "Zimbabwe",
+    "Kumba-Home"
+  ],
+  "author": "today is the past is the future",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "electron": "^10.1.2",
+    "electron-reloader": "^1.0.1"
+  }
+}
