@@ -25,7 +25,8 @@ calendar {
     right: 4%;
 }
 
-[cloak] {
+[cloak], 
+.vjs-big-play-button {
     visibility: hidden !important;
 }
 
@@ -34,8 +35,12 @@ button {
     right: 10px;
     top: 10px;
     width: 80px;
+    height: 48px;
     font-weight: 700;
     font-size: 16px;
+    background: center url(../mute.svg) no-repeat;
+    background-color: inherit;
+    border: none;
 }
 
 .screen {
