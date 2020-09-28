@@ -4,12 +4,14 @@ addEventListener("DOMContentLoaded", () => {
     const http = require("http");
     const player = videojs("video");
 
+    const DIR = "./assets/videos/";
+
     let timeline,
         playlist = getAllYears(),
-        state = new Proxy({ index: 0, volume: 0, time: 0}, {
+        state = new Proxy({ index: 0, volume: 0, time: 0 }, {
             set: function (target, key, value) {
                 target[key] = value;
-                updatePlayer();
+                updatePlayer(key);
                 return true;
             }
     });
@@ -19,6 +21,13 @@ addEventListener("DOMContentLoaded", () => {
     player.playlist(playlist);
     player.playlist.repeat(true);
     player.playlist.autoadvance(0);
+
+    player.on("play", () => {
+        let src = player.currentSrc();
+        let video = playlist.find(p => p.sources[0].src == src);
+        state.index = player.playlist.currentIndex();
+        state.year = video.year;
+    });
 
     player.on("volumechange", () => {
         $("button")[ player.volume() == 0 ? "show" : "hide" ]();
@@ -32,9 +41,7 @@ addEventListener("DOMContentLoaded", () => {
 
     controlServer();
 
-    function getAllYears() {
-        const DIR = "./assets/videos/";
-        
+    function getAllYears() {        
         let list = [];
 
         fs.readdirSync(DIR).sort().forEach(year => {
@@ -82,7 +89,7 @@ addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("state", JSON.stringify(store));
     }
 
-    function updatePlayer() {
+    function updatePlayer(key) {
         if(player.playlist.currentItem() != state.index) {
             player.playlist.currentItem(state.index);
         }
@@ -91,8 +98,10 @@ addEventListener("DOMContentLoaded", () => {
             player.volume(state.volume);
         }
 
-        player.currentTime(state.time);
-        
+        if(key == "time") {
+            player.currentTime(state.time);
+        }
+
         showYear(state.year);
     }
 
@@ -141,13 +150,13 @@ addEventListener("DOMContentLoaded", () => {
                 state.volume = e.volume;
             }
         
-            if(e.index) {
+            if(e.index >= 0) {
                 state.year = playlist[e.index].year;
                 state.index = e.index;
             }
 
             if(e.year) {
-                state.index = playlist.findIndex(i =>  i.year == state.year);
+                state.index = playlist.findIndex(i =>  i.year == e.year);
                 state.year = e.year;
                 state.time = 0;
             }
@@ -161,6 +170,12 @@ addEventListener("DOMContentLoaded", () => {
                 state.on = false;
                 turnOff();
             }
+
+            if(e.skip && !player.paused()) {
+                player.playlist.next();
+                state.index ++;
+                state.year = playlist[state.index].year;
+            }
         }
         catch(e) {}
     }
@@ -168,6 +183,8 @@ addEventListener("DOMContentLoaded", () => {
     function controlServer() {
         http.createServer((r, s) => {     
             let body = "";
+
+            const regex = new RegExp('.{1,4} .{1} .{1,4}\.mp4');
             
             r.on("end", () => {
                 
@@ -176,10 +193,11 @@ addEventListener("DOMContentLoaded", () => {
                 }
 
                 let output = Object.assign({}, state, {
-                    playlist: playlist.length,
-                    duration: player.duration(),
-                    title: playlist[state.index].sources[0].src
-                });
+                        playlist: playlist.length,
+                        duration: player.duration(),
+                        title: player.currentSrc().replace(regex, "").replace(DIR+state.year+"/", "").trim(),
+                        years: Array.from(new Set(playlist.map(i => i.year)))
+                    });
 
                 s.setHeader("access-control-allow-origin", "*");
                 s.setHeader("content-type", "application/json");
@@ -192,9 +210,5 @@ addEventListener("DOMContentLoaded", () => {
             });
 
         }).listen(8000); 
-    }
-
-    function _(s) {
-        console.log(s);
     }
 });

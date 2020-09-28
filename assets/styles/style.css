@@ -20,7 +20,7 @@ calendar {
     font-size: 3em;
     height: 100px;
     width: 100px;
-    position: absolute;
+    position: fixed;
     bottom: 0;
     right: 4%;
 }
@@ -32,12 +32,10 @@ calendar {
 
 button {
     position: fixed;
-    right: 10px;
+    right: 4%;
     top: 10px;
     width: 80px;
     height: 48px;
-    font-weight: 700;
-    font-size: 16px;
     background: center url(../mute.svg) no-repeat;
     background-color: inherit;
     border: none;
