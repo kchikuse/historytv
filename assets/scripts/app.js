@@ -12,7 +12,6 @@ addEventListener("DOMContentLoaded", async () => {
     let playlist = await loadYears();
 
     const player = videojs("video");
-
     player.volume(1.0);
     player.preload(true);
     player.playlist(playlist);
@@ -53,8 +52,6 @@ addEventListener("DOMContentLoaded", async () => {
         player.currentTime(state.time);
         player.autoplay(state.autoplay);
         player.playlist.currentItem(index);
-
-        console.log(state);
     }
 
     function showYear(year) {
