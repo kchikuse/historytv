@@ -38,7 +38,7 @@ addEventListener("DOMContentLoaded", async () => {
     loadState();
 
     async function loadYears() {
-        let response = await fetch("assets/videos.json");
+        let response = await fetch("http://localhost/videos/");
         return await response.json();
     }
 
@@ -49,9 +49,14 @@ addEventListener("DOMContentLoaded", async () => {
 
         showPause();
 
-        player.currentTime(state.time);
         player.autoplay(state.autoplay);
-        player.playlist.currentItem(index);
+        player.currentTime(state.time);
+
+        let position = playlist.findIndex(i => i.sources.src == player.currentSrc());
+
+        if(position != state.index) {
+            player.playlist.currentItem(index);
+        }
     }
 
     function showYear(year) {
@@ -103,7 +108,10 @@ addEventListener("DOMContentLoaded", async () => {
 
         if(code == " " || code == "P") {
             if(player.paused()) player.play();
-            else player.pause();
+            else {
+                state.time = player.currentTime();
+                player.pause();
+            }
             showPause();
         }
 
