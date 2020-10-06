@@ -38,7 +38,7 @@ addEventListener("DOMContentLoaded", async () => {
     loadState();
 
     async function loadYears() {
-        let response = await fetch("http://localhost/videos/");
+        let response = await fetch("assets/videos.json");
         return await response.json();
     }
 
