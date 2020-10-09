@@ -38,6 +38,12 @@ $(window).load(async () => {
         state.index = index;
     });
 
+    $(this).keydown(handleKeys);
+    
+    $(this).unload(saveState);
+
+    $(this).contextmenu(() => false);
+
     loadState();
 
     buildTimeline();
@@ -182,10 +188,26 @@ $(window).load(async () => {
         });
     }
 
-    $(this).keydown(e => {
+    function saveState() {
+        localStorage.setItem("state", JSON.stringify({
+            autoplay: player.paused() == false,
+            time: player.currentTime(),
+            index: state.index
+        }));
+    }
+
+    function handleKeys(e) {
         let index = state.index,
             max = playlist.length - 1,
             code = e.key.toUpperCase();
+
+        if(code == ".") {
+            toggleSwitch();
+        }
+
+        if (!isTurnedOn) {
+            return;
+        }
 
         if(e.key == "Enter" || code == "F") {
             player.requestFullscreen();
@@ -193,10 +215,6 @@ $(window).load(async () => {
 
         if(code == " " || code == "P") {
             togglePause();
-        }
-
-        if(code == ".") {
-            toggleSwitch();
         }
 
         if(code == "+") {
@@ -231,15 +249,5 @@ $(window).load(async () => {
             state.index = index;
             state.time = 0;
         }
-    });
-
-    $(this).unload(() => {
-        localStorage.setItem("state", JSON.stringify({
-            autoplay: player.paused() == false,
-            time: player.currentTime(),
-            index: state.index
-        }));
-    });
-
-    $(this).bind("contextmenu", () => false);
+    }
 });
