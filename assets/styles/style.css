@@ -9,10 +9,20 @@ body {
 	background-color: black;
     background-image: url(../images/static.gif);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    user-select: none;
+}
+
+body[off] {
+    background-image: none;
 }
 
 body, html, div {
 	height: 100%;
+}
+
+[cloak], 
+.vjs-big-play-button {
+    visibility: hidden !important;
 }
 
 #tv {
@@ -21,13 +31,20 @@ body, html, div {
 }
 
 #content {
-    width: 65%;
-    height: 87%;
-    position: relative;
-    top: 2%;
-    left: 7%;
-    z-index: -1;
+    width: 100%;
+    height: 100%;
+}
+
+.screen {
+    position: fixed;
+    top: 50%;
+    left: 39%;
+    width: 62vw;
+    height: 74vh;
+    transform: translate(-50%, -50%);
+    content: " ";
     overflow: hidden;
+    z-index: -1;
 }
   
 .video-js {
@@ -37,7 +54,7 @@ body, html, div {
     height: 100%;
     width: 100%; 
 }
-.video-js[data-paused=true] {
+.video-js[paused=true] {
     opacity: 0.5;
 }
 .video-js video {
@@ -55,23 +72,23 @@ calendar {
     right: 5%;
 }
 
-.vjs-has-started .vjs-control-bar {
-    bottom: 15%;
-    width: 85%;
-}
-
 topic {
     position: absolute;
-    left: 40%;
+    left: 48%;
     bottom: 7%;
+    width: 46%;
     color: white;
     font-size: 1.7em;
-    visibility: hidden;
-    opacity: 0;
-    transition: visibility 0s 2s, opacity 2s linear;
+    display: none;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
 }
-topic[data-visible=true] {
-    visibility: visible;
-    opacity: 1;
-    transition: opacity 2s linear;
+
+power {
+    cursor: pointer;
+    display: block;
+    height: 33px;
+    width: 50px;
+    position: absolute;
+    right: 12%;
+    top: 11%;
 }

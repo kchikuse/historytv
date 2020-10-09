@@ -1,18 +1,21 @@
-addEventListener("DOMContentLoaded", async () => {
+$(window).load(async () => {
 
     let timer, 
+        timeline,
+        isTurnedOn = true,
         state = new Proxy({}, {
-            set: function (target, key, value) {
+            set: (target, key, value) => {
                 target[key] = value;
                 update();
                 return true;
             }
         });
 
-    let playlist = await loadYears();
-
+    const playlist = await loadYears();
+    const videoPlayer = $(".video-js");
     const player = videojs("video");
-    player.volume(1.0);
+
+    player.volume(1);
     player.preload(true);
     player.playlist(playlist);
     player.playlist.repeat(true);
@@ -37,6 +40,8 @@ addEventListener("DOMContentLoaded", async () => {
 
     loadState();
 
+    buildTimeline();
+
     async function loadYears() {
         let response = await fetch("assets/videos.json");
         return await response.json();
@@ -51,6 +56,7 @@ addEventListener("DOMContentLoaded", async () => {
 
         player.autoplay(state.autoplay);
         player.currentTime(state.time);
+        player.volume(state.volume);
 
         let position = playlist.findIndex(i => i.sources.src == player.currentSrc());
 
@@ -60,11 +66,11 @@ addEventListener("DOMContentLoaded", async () => {
     }
 
     function showYear(year) {
-        document.querySelector("calendar").innerHTML = year;
+        $("calendar").html(year);
     }
 
     function showPause() {
-        player.el().dataset.paused = player.paused();
+        videoPlayer.attr("paused", player.paused());
     }
 
     function showTopic() {
@@ -73,15 +79,99 @@ addEventListener("DOMContentLoaded", async () => {
         }
 
         let topic = playlist[state.index].title;
-        let element = document.querySelector("topic");
 
         clearTimeout(timer);
-        element.innerHTML = topic;
-        element.dataset.visible = true;
+
+        $("topic").html(topic).fadeIn();
 
         timer = setTimeout(() => {
-           delete element.dataset.visible;
+           $("topic").fadeOut();
         }, 3000);
+    }
+
+    function buildTimeline() {
+        timeline = new TimelineMax({
+          paused: true
+        });
+        
+        timeline
+        .to(".screen", 0.2, {
+          width: "100vw",
+          height: "2px",
+          background: "#ffffff",
+          ease: Power2.easeOut
+        })
+        .to(".screen", 0.2, {
+          width: "0",
+          height: "0",
+          background: "#ffffff"
+        });
+    }
+
+    function toggleSwitch() {
+        if (isTurnedOn) {
+            turnOff();
+        }
+        
+        if (!isTurnedOn) {
+            turnOn();
+        }
+        
+        isTurnedOn = !isTurnedOn;
+    }  
+
+    function turnOff() {
+        player.pause();
+        
+        state.time = player.currentTime();
+        
+        $("body").attr("off", true);
+
+        videoPlayer.fadeOut("fast", () => {
+            videoPlayer.attr("cloak", true);
+            timeline.restart();
+        });
+    }
+
+    function turnOn() {
+        timeline.reverse();
+    
+        videoPlayer.fadeIn("fast", () => {
+            setTimeout(() => {
+                $("body").removeAttr("off"); 
+                videoPlayer.removeAttr("cloak");
+                player.play();
+            }, 200);
+        });
+    }
+
+    function togglePause() {
+        if(player.paused()) {
+            player.play();
+        }
+        else {
+            state.time = player.currentTime();
+            player.pause();
+        }
+
+        showPause();
+    }
+
+    function adjustVolume(increase) {
+        
+        let volume = player.volume();
+
+        if(increase) {
+            volume = (volume * 10 + 1) / 10;
+            if(volume > 1) volume = 1;
+        }
+        else {
+            volume = (volume * 10 - 1) / 10;
+            if(volume < 0) volume = 0;
+        }
+
+        player.volume(volume);
+        player.muted(false);
     }
 
     function loadState() {
@@ -92,35 +182,33 @@ addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    window.addEventListener("click", e => {
-        e.preventDefault();
-        e.stopPropagation();
-    });
-
-    window.addEventListener("keydown", e => {
-        let index = state.index;
-        let max = playlist.length - 1;
-        let code = e.key.toUpperCase();
+    $(this).keydown(e => {
+        let index = state.index,
+            max = playlist.length - 1,
+            code = e.key.toUpperCase();
 
         if(e.key == "Enter" || code == "F") {
             player.requestFullscreen();
         }
 
         if(code == " " || code == "P") {
-            if(player.paused()) player.play();
-            else {
-                state.time = player.currentTime();
-                player.pause();
-            }
-            showPause();
+            togglePause();
+        }
+
+        if(code == ".") {
+            toggleSwitch();
         }
 
         if(code == "+") {
-            player.muted(false);
+            adjustVolume(true);
         }
 
         if(code == "-") {
-            player.muted(true);
+            adjustVolume(false);
+        }
+
+        if(code == "M") {
+            player.muted( ! player.muted() );
         }
         
         if(e.key == "ArrowLeft") {
@@ -145,11 +233,13 @@ addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    window.addEventListener("beforeunload", () => {
+    $(this).unload(() => {
         localStorage.setItem("state", JSON.stringify({
             autoplay: player.paused() == false,
             time: player.currentTime(),
             index: state.index
         }));
     });
+
+    $(this).bind("contextmenu", () => false);
 });
