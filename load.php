@@ -2,9 +2,7 @@
 
 require "rb.php";
 
-R::setup("mysql:host=localhost;dbname=historytv","root","root");
-
-header("Access-Control-Allow-Origin: *");
+R::setup("mysql:host=localhost;dbname=historytv", "root", "root");
 
 $years = load();
 
@@ -14,7 +12,7 @@ $json = json_encode(getVideos());
 
 file_put_contents("assets/videos.json", $json);
 
-echo file_get_contents("assets/videos.json");
+output();
 
 function load() {
 
@@ -78,7 +76,7 @@ function isOk($file) {
 }
 
 function getVideos() {
-    $videos = R::getAll('SELECT * FROM videos ORDER BY year, sorter IS NULL, sorter ASC');
+    $videos = R::getAll("SELECT * FROM videos ORDER BY year, sorter IS NULL, sorter ASC");
 
     $years = [];
 
@@ -93,4 +91,10 @@ function getVideos() {
     }
 
     return $years;
+}
+
+function output() {
+    header("Access-Control-Allow-Origin: *");
+    header("Content-Type: application/json");
+    echo file_get_contents("assets/videos.json");
 }

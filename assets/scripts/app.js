@@ -2,6 +2,7 @@ $(window).load(async () => {
 
     let timer, 
         timeline,
+        yearly = [],
         isTurnedOn = true,
         state = new Proxy({}, {
             set: (target, key, value) => {
@@ -12,7 +13,6 @@ $(window).load(async () => {
         });
 
     const playlist = await loadYears();
-    const videoPlayer = $(".video-js");
     const player = videojs("video");
 
     player.volume(1);
@@ -35,7 +35,7 @@ $(window).load(async () => {
             index = 0;
         }
 
-        state.index = index;
+        setIndex(index);
     });
 
     $(this).keydown(handleKeys);
@@ -54,9 +54,8 @@ $(window).load(async () => {
     }
 
     function update() {
-        let index = state.index || 0;
         
-        showYear(playlist[index].year);
+        showYear();
 
         showPause();
 
@@ -67,16 +66,18 @@ $(window).load(async () => {
         let position = playlist.findIndex(i => i.sources.src == player.currentSrc());
 
         if(position != state.index) {
-            player.playlist.currentItem(index);
+            player.playlist.currentItem(state.index || 0);
         }
     }
 
     function showYear(year) {
-        $("calendar").html(year);
+        let index = state.index || 0;
+        let currentYear = playlist[index].year;
+        $("calendar").text(year || currentYear);
     }
 
     function showPause() {
-        videoPlayer.attr("paused", player.paused());
+        $(".video-js").attr("paused", player.paused());
     }
 
     function showTopic() {
@@ -88,10 +89,10 @@ $(window).load(async () => {
 
         clearTimeout(timer);
 
-        $("topic").html(topic).fadeIn();
+        $("topic").text(topic).fadeIn();
 
         timer = setTimeout(() => {
-           $("topic").fadeOut();
+          $("topic").fadeOut();
         }, 3000);
     }
 
@@ -129,12 +130,12 @@ $(window).load(async () => {
     function turnOff() {
         player.pause();
         
-        state.time = player.currentTime();
+        setTime(player.currentTime());
         
         $("body").attr("off", true);
 
-        videoPlayer.fadeOut("fast", () => {
-            videoPlayer.attr("cloak", true);
+        $(".video-js").fadeOut("fast", function() {
+            $(this).attr("cloak", true);
             timeline.restart();
         });
     }
@@ -142,10 +143,10 @@ $(window).load(async () => {
     function turnOn() {
         timeline.reverse();
     
-        videoPlayer.fadeIn("fast", () => {
+        $(".video-js").fadeIn("fast", function() {
             setTimeout(() => {
-                $("body").removeAttr("off"); 
-                videoPlayer.removeAttr("cloak");
+                $(this).removeAttr("cloak");
+                $("body").removeAttr("off");
                 player.play();
             }, 200);
         });
@@ -156,22 +157,23 @@ $(window).load(async () => {
             player.play();
         }
         else {
-            state.time = player.currentTime();
+            setTime(player.currentTime());
             player.pause();
         }
 
         showPause();
     }
 
-    function adjustVolume(increase) {
+    function adjustVolume(code) {
         
         let volume = player.volume();
 
-        if(increase) {
+        if(code == "+") {
             volume = (volume * 10 + 1) / 10;
             if(volume > 1) volume = 1;
         }
-        else {
+
+        if(code == "-") {
             volume = (volume * 10 - 1) / 10;
             if(volume < 0) volume = 0;
         }
@@ -192,41 +194,81 @@ $(window).load(async () => {
         localStorage.setItem("state", JSON.stringify({
             autoplay: player.paused() == false,
             time: player.currentTime(),
-            index: state.index
+            index: state.index || 0
         }));
     }
 
+    function checkForYear(key) {
+        if(key == "Enter") {
+            
+            if(yearly.length == 4) {
+                let year = Number(yearly.join(''));
+                let index = playlist.findIndex(i => i.year == year);
+
+                if(index > 0 && index < playlist.length) {
+                    setIndex(index);
+                    setTime(0);
+                }
+                else {
+                    showYear();
+                }
+
+                yearly = [];
+            }
+            else if(yearly.length < 4) {
+                showYear();
+                yearly = [];
+            }
+        }
+        else if(yearly.length < 4) {
+            yearly.push(Number(key));
+            showYear(yearly);
+        }
+    }
+
+    function isNumeric(value) {
+        return /^-?\d+$/.test(value);
+    }
+
+    function setIndex(index) {
+        state.index = index;
+    }
+
+    function setTime(time) {
+        state.time = time;
+    }
+
     function handleKeys(e) {
-        let index = state.index,
-            max = playlist.length - 1,
-            code = e.key.toUpperCase();
+        let index = state.index;
+        let max = playlist.length - 1;
+        let code = e.key.toUpperCase();
 
         if(code == ".") {
-            toggleSwitch();
+            return toggleSwitch();
         }
 
         if (!isTurnedOn) {
             return;
         }
 
-        if(e.key == "Enter" || code == "F") {
-            player.requestFullscreen();
+        if(code == "F") {
+            return player.requestFullscreen();
         }
 
         if(code == " " || code == "P") {
-            togglePause();
+            return togglePause();
         }
 
-        if(code == "+") {
-            adjustVolume(true);
-        }
-
-        if(code == "-") {
-            adjustVolume(false);
+        if(code == "+" || code == "-") {
+            return adjustVolume(code);
         }
 
         if(code == "M") {
-            player.muted( ! player.muted() );
+            return player.muted( ! player.muted() );
+        }
+
+        if(e.key == "Enter" || isNumeric(e.key)) {
+            return checkForYear(e.key);
         }
         
         if(e.key == "ArrowLeft") {
@@ -246,8 +288,8 @@ $(window).load(async () => {
         }
 
         if(index != state.index) {
-            state.index = index;
-            state.time = 0;
+            setIndex(index);
+            setTime(0);
         }
     }
 });
