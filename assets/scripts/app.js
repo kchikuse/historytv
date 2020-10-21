@@ -1,6 +1,7 @@
 $(window).load(async () => {
 
     let timer, 
+        slider,
         timeline,
         yearly = [],
         isTurnedOn = true,
@@ -15,7 +16,7 @@ $(window).load(async () => {
     const playlist = await loadYears();
     const player = videojs("video");
 
-    player.volume(1);
+    player.volume(0);
     player.preload(true);
     player.playlist(playlist);
     player.playlist.repeat(true);
@@ -36,6 +37,21 @@ $(window).load(async () => {
         }
 
         setIndex(index);
+    });
+
+    player.on("volumechange", () => {
+        let range = $("input[type='range']");
+        let volume = player.volume() * 100;
+
+        clearTimeout(slider);
+
+        range.val(volume).fadeIn();
+
+        $("#tv").attr("volume", volume);
+
+        slider = setTimeout(() => {
+           range.fadeOut();
+        }, 1500);
     });
 
     $(this).keydown(handleKeys);
@@ -77,7 +93,7 @@ $(window).load(async () => {
     }
 
     function showPause() {
-        $(".video-js").attr("paused", player.paused());
+        $("#tv").attr("paused", player.paused());
     }
 
     function showTopic() {
