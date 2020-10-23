@@ -1,7 +1,6 @@
 $(window).load(async () => {
 
-    let timer, 
-        slider,
+    let timer,
         timeline,
         yearly = [],
         isTurnedOn = true,
@@ -14,9 +13,11 @@ $(window).load(async () => {
         });
 
     const playlist = await loadYears();
+
     const player = videojs("video");
 
-    player.volume(0);
+    player.volume(1);
+    player.muted(false);
     player.preload(true);
     player.playlist(playlist);
     player.playlist.repeat(true);
@@ -24,8 +25,12 @@ $(window).load(async () => {
 
     player.on("play", () => {
         state.autoplay = true;
-        showTopic();
+        
         showPause();
+
+        if(player.currentTime() == 0) {
+            showTopic();
+        }
     });
 
     player.on("ended", () => {
@@ -39,19 +44,8 @@ $(window).load(async () => {
         setIndex(index);
     });
 
-    player.on("volumechange", () => {
-        let range = $("input[type='range']");
-        let volume = player.volume() * 100;
-
-        clearTimeout(slider);
-
-        range.val(volume).fadeIn();
-
-        $("#tv").attr("volume", volume);
-
-        slider = setTimeout(() => {
-           range.fadeOut();
-        }, 1500);
+    player.on("error", (e, err) => {
+        console.log(e, err, JSON.stringify(state));
     });
 
     $(this).keydown(handleKeys);
@@ -77,13 +71,14 @@ $(window).load(async () => {
 
         player.autoplay(state.autoplay);
         player.currentTime(state.time);
-        player.volume(state.volume);
 
         let position = playlist.findIndex(i => i.sources.src == player.currentSrc());
 
         if(position != state.index) {
             player.playlist.currentItem(state.index || 0);
         }
+
+        $(".video-js").attr("scale", playlist[position].scale);
     }
 
     function showYear(year) {
@@ -93,14 +88,10 @@ $(window).load(async () => {
     }
 
     function showPause() {
-        $("#tv").attr("paused", player.paused());
+        $("tv").attr("paused", player.paused());
     }
 
     function showTopic() {
-        if(player.currentTime() > 0) {
-            return;
-        }
-
         let topic = playlist[state.index].title;
 
         clearTimeout(timer);
@@ -118,13 +109,13 @@ $(window).load(async () => {
         });
         
         timeline
-        .to(".screen", 0.2, {
+        .to("screen", 0.2, {
           width: "100vw",
           height: "2px",
           background: "#ffffff",
           ease: Power2.easeOut
         })
-        .to(".screen", 0.2, {
+        .to("screen", 0.2, {
           width: "0",
           height: "0",
           background: "#ffffff"
@@ -149,6 +140,8 @@ $(window).load(async () => {
         setTime(player.currentTime());
         
         $("body").attr("off", true);
+        
+        $("topic").fadeOut(0);
 
         $(".video-js").fadeOut("fast", function() {
             $(this).attr("cloak", true);
@@ -180,24 +173,6 @@ $(window).load(async () => {
         showPause();
     }
 
-    function adjustVolume(code) {
-        
-        let volume = player.volume();
-
-        if(code == "+") {
-            volume = (volume * 10 + 1) / 10;
-            if(volume > 1) volume = 1;
-        }
-
-        if(code == "-") {
-            volume = (volume * 10 - 1) / 10;
-            if(volume < 0) volume = 0;
-        }
-
-        player.volume(volume);
-        player.muted(false);
-    }
-
     function loadState() {
         Object.assign(state, JSON.parse(localStorage.getItem("state")) || {
             autoplay: true,
@@ -215,10 +190,12 @@ $(window).load(async () => {
     }
 
     function checkForYear(key) {
+        let stringify = e => Number(e.join(''));
+
         if(key == "Enter") {
             
             if(yearly.length == 4) {
-                let year = Number(yearly.join(''));
+                let year = stringify(yearly);
                 let index = playlist.findIndex(i => i.year == year);
 
                 if(index > 0 && index < playlist.length) {
@@ -238,11 +215,11 @@ $(window).load(async () => {
         }
         else if(yearly.length < 4) {
             yearly.push(Number(key));
-            showYear(yearly);
+            showYear(stringify(yearly));
         }
     }
 
-    function isNumeric(value) {
+    function isNumber(value) {
         return /^-?\d+$/.test(value);
     }
 
@@ -258,7 +235,7 @@ $(window).load(async () => {
         let index = state.index;
         let max = playlist.length - 1;
         let code = e.key.toUpperCase();
-
+        
         if(code == ".") {
             return toggleSwitch();
         }
@@ -271,19 +248,15 @@ $(window).load(async () => {
             return player.requestFullscreen();
         }
 
+        if(code == "I") {
+            return showTopic();
+        }
+
         if(code == " " || code == "P") {
             return togglePause();
         }
 
-        if(code == "+" || code == "-") {
-            return adjustVolume(code);
-        }
-
-        if(code == "M") {
-            return player.muted( ! player.muted() );
-        }
-
-        if(e.key == "Enter" || isNumeric(e.key)) {
+        if(e.key == "Enter" || isNumber(e.key)) {
             return checkForYear(e.key);
         }
         
