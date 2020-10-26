@@ -45,7 +45,7 @@ $(window).load(async () => {
     });
 
     player.on("error", (e, err) => {
-        console.log(e, err, JSON.stringify(state));
+        console.error(e, err, JSON.stringify(state));
     });
 
     $(this).keydown(handleKeys);
@@ -59,8 +59,7 @@ $(window).load(async () => {
     buildTimeline();
 
     async function loadYears() {
-        let response = await fetch("assets/videos.json");
-        return await response.json();
+        return await fetch("assets/videos.json").then(r => r.json());
     }
 
     function update() {
@@ -78,7 +77,7 @@ $(window).load(async () => {
             player.playlist.currentItem(state.index || 0);
         }
 
-        $(".video-js").attr("scale", playlist[position].scale);
+        $(player.el()).attr("scale", playlist[position].scale);
     }
 
     function showYear(year) {
@@ -88,19 +87,20 @@ $(window).load(async () => {
     }
 
     function showPause() {
-        $("tv").attr("paused", player.paused());
+        $(player.el()).attr("paused", player.paused());
     }
 
     function showTopic() {
-        let topic = playlist[state.index].title;
+        let video = playlist[state.index];
 
         clearTimeout(timer);
 
-        $("topic").text(topic).fadeIn();
+        $("topic").text(video.title).fadeIn()
+            .css("background-image", `url(assets/images/${video.flag}.gif)`);
 
         timer = setTimeout(() => {
           $("topic").fadeOut();
-        }, 3000);
+        }, 4000);
     }
 
     function buildTimeline() {
@@ -143,7 +143,7 @@ $(window).load(async () => {
         
         $("topic").fadeOut(0);
 
-        $(".video-js").fadeOut("fast", function() {
+        $(player.el()).fadeOut("fast", function() {
             $(this).attr("cloak", true);
             timeline.restart();
         });
@@ -152,7 +152,7 @@ $(window).load(async () => {
     function turnOn() {
         timeline.reverse();
     
-        $(".video-js").fadeIn("fast", function() {
+        $(player.el()).fadeIn("fast", function() {
             setTimeout(() => {
                 $(this).removeAttr("cloak");
                 $("body").removeAttr("off");
@@ -198,7 +198,7 @@ $(window).load(async () => {
                 let year = stringify(yearly);
                 let index = playlist.findIndex(i => i.year == year);
 
-                if(index > 0 && index < playlist.length) {
+                if(index >= 0 && index < playlist.length) {
                     setIndex(index);
                     setTime(0);
                 }
@@ -242,10 +242,6 @@ $(window).load(async () => {
 
         if (!isTurnedOn) {
             return;
-        }
-
-        if(code == "F") {
-            return player.requestFullscreen();
         }
 
         if(code == "I") {
