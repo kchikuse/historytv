@@ -1,9 +1,13 @@
 $(window).load(async () => {
 
     let timer,
+        slider,
         timeline,
+        songs = [],
         yearly = [],
         isTurnedOn = true,
+        isJukeBox = false,
+        remote = navigator.mediaSession,
         state = new Proxy({}, {
             set: (target, key, value) => {
                 target[key] = value;
@@ -34,18 +38,31 @@ $(window).load(async () => {
     });
 
     player.on("ended", () => {
-        let index = state.index + 1;
-        let max = playlist.length - 1;
-
-        if(index > max) {
-            index = 0;
-        }
-
-        setIndex(index);
+        navigate("+");
     });
 
-    player.on("error", (e, err) => {
-        console.error(e, err, JSON.stringify(state));
+    player.on("volumechange", () => {
+
+        clearTimeout(slider);
+
+        $("volume").text(player.volume() * 10).fadeIn();
+
+        slider = setTimeout(() => {
+           $("volume").fadeOut();
+        }, 1500);
+    });
+
+    remote.setActionHandler("previoustrack", () => {
+        navigate("-");
+    });
+
+    remote.setActionHandler("nexttrack", () => {
+        navigate("+");
+    });
+
+    remote.setActionHandler("pause", () => {
+        togglePause();
+        remote.playbackState = "paused";
     });
 
     $(this).keydown(handleKeys);
@@ -101,6 +118,11 @@ $(window).load(async () => {
         timer = setTimeout(() => {
           $("topic").fadeOut();
         }, 4000);
+    }
+
+    function showAbout() {
+        let show = $("about").is(":visible");
+        $("about").attr("show", ! show); 
     }
 
     function buildTimeline() {
@@ -173,6 +195,60 @@ $(window).load(async () => {
         showPause();
     }
 
+    function toggleJukeBox() {
+        if (isJukeBox) {
+            songs = [];
+            $("calendar").removeAttr("jukebox",);
+        }
+        
+        if (!isJukeBox) {
+            loadSongs();
+            $("calendar").attr("jukebox", true);
+        }
+        
+        isJukeBox = !isJukeBox;
+
+        if(isJukeBox) {
+            navigate("+");
+        }
+    }
+
+    function navigate(direction) {
+        let index = state.index;
+        let max = playlist.length - 1;
+
+        if(direction == "-") {
+            index = index - 1;
+        }
+
+        if(direction == "+") {
+            index = index + 1;
+        }
+
+        if(index < 0) {
+            index = max;
+        }
+
+        if(index > max) {
+            index = 0;
+        }
+
+        if(isJukeBox) {
+
+            if(songs.length == 0) {
+                loadSongs();
+            }
+
+            let song = songs.shift();
+            index = playlist.findIndex(p => p.id == song.id);
+        }
+
+        if(index != state.index) {
+            setIndex(index);
+            setTime(0);
+        }
+    }
+
     function loadState() {
         Object.assign(state, JSON.parse(localStorage.getItem("state")) || {
             autoplay: true,
@@ -223,6 +299,42 @@ $(window).load(async () => {
         return /^-?\d+$/.test(value);
     }
 
+    function adjustVolume(code) {
+        
+        let volume = player.volume();
+
+        if(code == "ArrowUp") {
+            volume = (volume * 10 + 1) / 10;
+            if(volume > 1) volume = 1;
+        }
+
+        if(code == "ArrowDown") {
+            volume = (volume * 10 - 1) / 10;
+            if(volume < 0) volume = 0;
+        }
+
+        player.volume(volume);
+        player.muted(false);
+        player.trigger("volumechange");
+    }
+
+    function playVideo() {
+        let ids = playlist.map(i => i.id),
+            max = ids.length - 1,
+            min = 0;
+
+        for(let i = 0; i < 50; i++) {
+            shuffle(ids);
+        }
+
+        let pos = Math.random() * (max - min) + min,
+            id = ids[ Math.floor(pos) ],
+            index = playlist.findIndex(i => i.id == id);
+        
+        setIndex(index);
+        setTime(0);
+    }
+
     function setIndex(index) {
         state.index = index;
     }
@@ -231,12 +343,29 @@ $(window).load(async () => {
         state.time = time;
     }
 
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    function loadSongs() {
+        songs = playlist.filter(e => e.song);
+
+        for(let i = 0; i < 30; i++) {
+            shuffle(songs);
+        }
+    }
+
     function handleKeys(e) {
-        let index = state.index;
-        let max = playlist.length - 1;
         let code = e.key.toUpperCase();
+
+        if(code != "F5") {
+            e.preventDefault();
+        } 
         
-        if(code == ".") {
+        if(code == "." || code ==  "O") {
             return toggleSwitch();
         }
 
@@ -244,12 +373,28 @@ $(window).load(async () => {
             return;
         }
 
+        if(code == " ") {
+            return playVideo();
+        }
+
+        if(code == "A") {
+            return showAbout();
+        }
+
         if(code == "I") {
             return showTopic();
         }
 
-        if(code == " " || code == "P") {
+        if(code == "J") {
+            return toggleJukeBox();
+        }
+
+        if(code == "P") {
             return togglePause();
+        }
+
+        if(e.key == "ArrowUp" || e.key == "ArrowDown") {
+            return adjustVolume(e.key);
         }
 
         if(e.key == "Enter" || isNumber(e.key)) {
@@ -257,24 +402,11 @@ $(window).load(async () => {
         }
         
         if(e.key == "ArrowLeft") {
-            index = index - 1;
+            return navigate("-");
         }
 
         if(e.key == "ArrowRight") {
-            index = index + 1;
-        }
-
-        if(index < 0) {
-            index = max;
-        }
-
-        if(index > max) {
-            index = 0;
-        }
-
-        if(index != state.index) {
-            setIndex(index);
-            setTime(0);
+            return navigate("+");
         }
     }
 });

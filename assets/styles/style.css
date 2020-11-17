@@ -1,3 +1,8 @@
+@font-face {
+    font-family: andy;
+    src: url(andy.ttf);
+}
+
 * {
     box-sizing: border-box;
     outline: none;
@@ -68,11 +73,6 @@ calendar {
     font-size: 5rem;
     user-select: none;
     letter-spacing: 4px;
-    text-shadow: 
-    -1px -1px 0 black, 
-    1px -1px 0 black, 
-    -1px 1px 0 black, 
-    1px 1px 0 black;
 }
 
 topic {
@@ -81,6 +81,96 @@ topic {
     background-repeat: no-repeat;
     background-position: 50px 15px;
     background-size: 216px;
-    font-size: 2.4em;
+    font-size: 3rem;
     display: none;
+}
+
+volume {
+    display: grid;
+    position: fixed;
+    align-content: center;
+    justify-content: center;
+    width: 100vw;
+    height: 100vh;
+    color: white;
+    opacity: 0.6;
+    font-size: 12rem;
+    font-weight: 900;
+    -webkit-text-stroke: 5px black;
+}
+
+calendar, volume {
+    text-shadow: 
+    -1px -1px 0 black, 
+    1px -1px 0 black, 
+    -1px 1px 0 black, 
+    1px 1px 0 black;
+}
+
+calendar[jukebox]:after {
+    content: "\266A";
+    font-size: 1.3em;
+    position: absolute;
+    right: 8%;
+}
+
+about {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 30% 30% 40%;
+    justify-items: center;
+    align-items: center;
+    align-content: center;
+    background-image: url(../images/static.gif);
+    display: none;
+    animation: fadeIn ease .5s;
+}
+about[show="true"] {
+    display: grid;
+}
+
+about label {
+    font-family: andy;
+    font-size: 8rem;
+    text-shadow: 
+    -3px -3px 0 rgb(8, 6, 3), 
+    3px -3px 0 orange, 
+    -3px 3px 0 orange, 
+    3px 3px 0 orange;
+}
+about label span {
+    color: #e4dd14;
+}
+
+about p {
+    font-size: 3rem;
+    text-align: center;
+}
+
+about flags {
+    display: grid;
+    grid-template-columns: repeat(8,  1fr);
+    width: 90%;
+}
+
+about img {
+    height: 60px;
+    width: auto;
+}
+
+body[off="true"] about {
+    display: none;
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
 }
