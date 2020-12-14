@@ -22,7 +22,6 @@ $(window).load(async () => {
     const player = videojs("video");
 
     player.volume(0);
-    player.volume(0.4);
     player.muted(false);
     player.preload(true);
     player.playlist(playlist);
