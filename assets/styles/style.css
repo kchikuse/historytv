@@ -16,8 +16,8 @@ body {
     background-image: url(../images/static.gif);
     background-color: black;
     user-select: none;
-    color: white;
     cursor: none;
+    color: white;
 }
 
 body[off] {
@@ -107,11 +107,11 @@ calendar, volume {
     1px 1px 0 black;
 }
 
-calendar[jukebox]:after {
-    content: "\266A";
-    font-size: 1.3em;
+calendar[jukebox="true"]:after {
+    content: "♬";
+    font-size: 1.2em;
     position: absolute;
-    right: 8%;
+    right: 5%;
 }
 
 about {

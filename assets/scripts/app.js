@@ -3,10 +3,9 @@ $(window).load(async () => {
     let timer,
         slider,
         timeline,
-        songs = [],
         yearly = [],
-        isTurnedOn = true,
         isJukeBox = false,
+        isTurnedOn = true,
         remote = navigator.mediaSession,
         state = new Proxy({}, {
             set: (target, key, value) => {
@@ -18,9 +17,12 @@ $(window).load(async () => {
 
     const playlist = await loadYears();
 
+    const jukeBox = new JukeBox(playlist);
+
     const player = videojs("video");
 
     player.volume(0);
+    player.volume(0.4);
     player.muted(false);
     player.preload(true);
     player.playlist(playlist);
@@ -130,6 +132,10 @@ $(window).load(async () => {
         $("about").attr("show", ! show); 
     }
 
+    function showJukeBox() {
+        $("calendar").attr("jukebox", isJukeBox);
+    }
+
     function buildTimeline() {
         timeline = new TimelineMax({
           paused: true
@@ -201,17 +207,9 @@ $(window).load(async () => {
     }
 
     function toggleJukeBox() {
-        if (isJukeBox) {
-            songs = [];
-            $("calendar").removeAttr("jukebox");
-        }
-        
-        if (!isJukeBox) {
-            loadSongs();
-            $("calendar").attr("jukebox", true);
-        }
-        
         isJukeBox = !isJukeBox;
+
+        showJukeBox();
 
         if(isJukeBox) {
             navigate("+");
@@ -219,14 +217,16 @@ $(window).load(async () => {
     }
 
     function navigate(direction) {
-        let index = state.index;
-        let max = playlist.length - 1;
+        let index = state.index,
+            max = playlist.length - 1,
+            prev = direction == "-",
+            next = direction == "+";
 
-        if(direction == "-") {
+        if(prev) {
             index = index - 1;
         }
 
-        if(direction == "+") {
+        if(next) {
             index = index + 1;
         }
 
@@ -239,13 +239,8 @@ $(window).load(async () => {
         }
 
         if(isJukeBox) {
-
-            if(songs.length == 0) {
-                loadSongs();
-            }
-
-            let song = songs.shift();
-            index = playlist.findIndex(p => p.id == song.id);
+            if(prev) index = jukeBox.prev();
+            if(next) index = jukeBox.next();
         }
 
         if(index != state.index) {
@@ -256,17 +251,24 @@ $(window).load(async () => {
 
     function loadState() {
         Object.assign(state, JSON.parse(localStorage.getItem("state")) || {
+            jukebox: false,
             autoplay: true,
             index: 0, 
             time: 0
         });
+
+        if(state.jukebox == true) {
+            isJukeBox = true;
+            showJukeBox();
+        }
     }
 
     function saveState() {
         localStorage.setItem("state", JSON.stringify({
             autoplay: player.paused() == false,
             time: player.currentTime(),
-            index: state.index || 0
+            index: state.index || 0,
+            jukebox: isJukeBox
         }));
     }
 
@@ -328,9 +330,7 @@ $(window).load(async () => {
             max = ids.length - 1,
             min = 0;
 
-        for(let i = 0; i < 50; i++) {
-            shuffle(ids);
-        }
+        jukeBox.shuffle(ids);
 
         let pos = Math.random() * (max - min) + min,
             id = ids[ Math.floor(pos) ],
@@ -350,21 +350,6 @@ $(window).load(async () => {
 
     function setTime(time) {
         state.time = time;
-    }
-
-    function shuffle(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-        }
-    }
-
-    function loadSongs() {
-        songs = playlist.filter(e => e.song);
-
-        for(let i = 0; i < 30; i++) {
-            shuffle(songs);
-        }
     }
 
     function handleKeys(e) {
