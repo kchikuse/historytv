@@ -20,7 +20,7 @@ $(window).load(async () => {
 
     const player = videojs("video");
 
-    player.volume(1);
+    player.volume(0);
     player.muted(false);
     player.preload(true);
     player.playlist(playlist);
@@ -76,7 +76,12 @@ $(window).load(async () => {
     buildTimeline();
 
     async function loadYears() {
-        return await fetch("assets/videos.json").then(r => r.json());
+        return await fetch("assets/videos.json", {
+            headers: {
+              "cache-control": "no-cache",
+              "pragma": "no-cache"
+            }
+          }).then(r => r.json());
     }
 
     function update() {
@@ -198,7 +203,7 @@ $(window).load(async () => {
     function toggleJukeBox() {
         if (isJukeBox) {
             songs = [];
-            $("calendar").removeAttr("jukebox",);
+            $("calendar").removeAttr("jukebox");
         }
         
         if (!isJukeBox) {
@@ -330,6 +335,10 @@ $(window).load(async () => {
         let pos = Math.random() * (max - min) + min,
             id = ids[ Math.floor(pos) ],
             index = playlist.findIndex(i => i.id == id);
+        
+        if(isJukeBox) {
+            toggleJukeBox();
+        }
         
         setIndex(index);
         setTime(0);
