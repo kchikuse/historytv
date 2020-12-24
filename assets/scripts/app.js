@@ -1,23 +1,22 @@
 $(window).load(async () => {
 
     let timer,
-        slider,
+        volumer,
         timeline,
         yearly = [],
         isJukeBox = false,
         isTurnedOn = true,
-        remote = navigator.mediaSession,
         state = new Proxy({}, {
             set: (target, key, value) => {
                 target[key] = value;
-                update();
+                updateScreen();
                 return true;
             }
         });
 
     const playlist = await loadYears();
 
-    const jukeBox = new JukeBox(playlist);
+    let jukeBox = new JukeBox(playlist);
 
     const player = videojs("video");
 
@@ -44,26 +43,25 @@ $(window).load(async () => {
 
     player.on("volumechange", () => {
 
-        clearTimeout(slider);
+        clearTimeout(volumer);
 
-        $("volume").text(player.volume() * 10).fadeIn();
+        $("volume").text( player.volume() * 10 ).fadeIn();
 
-        slider = setTimeout(() => {
+        volumer = setTimeout(() => {
            $("volume").fadeOut();
         }, 1500);
     });
 
-    remote.setActionHandler("previoustrack", () => {
+    navigator.mediaSession.setActionHandler("previoustrack", () => {
         navigate("-");
     });
 
-    remote.setActionHandler("nexttrack", () => {
+    navigator.mediaSession.setActionHandler("nexttrack", () => {
         navigate("+");
     });
 
-    remote.setActionHandler("pause", () => {
+    navigator.mediaSession.setActionHandler("pause", () => {
         togglePause();
-        remote.playbackState = "paused";
     });
 
     $(this).keydown(handleKeys);
@@ -72,20 +70,18 @@ $(window).load(async () => {
 
     $(this).contextmenu(() => false);
 
+    Array.prototype.shuffle = shuffle;
+
     loadState();
 
     buildTimeline();
 
     async function loadYears() {
-        return await fetch("assets/videos.json", {
-            headers: {
-              "cache-control": "no-cache",
-              "pragma": "no-cache"
-            }
-          }).then(r => r.json());
+        let response = await fetch("assets/videos.json");
+        return await response.json();
     }
 
-    function update() {
+    function updateScreen() {
         
         showYear();
 
@@ -127,8 +123,7 @@ $(window).load(async () => {
     }
 
     function showAbout() {
-        let show = $("about").is(":visible");
-        $("about").attr("show", ! show); 
+        $("about").attr("show", $("about").is(":not(:visible)"));
     }
 
     function showJukeBox() {
@@ -211,6 +206,7 @@ $(window).load(async () => {
         showJukeBox();
 
         if(isJukeBox) {
+            jukeBox.shuffle();
             navigate("+");
         }
     }
@@ -257,6 +253,8 @@ $(window).load(async () => {
         });
 
         if(state.jukebox == true) {
+            jukeBox = new JukeBox(playlist);
+            jukeBox.shuffle();
             isJukeBox = true;
             showJukeBox();
         }
@@ -272,13 +270,18 @@ $(window).load(async () => {
     }
 
     function checkForYear(key) {
-        let stringify = e => Number(e.join(''));
+        let digits = 4,
+            stringify = e => Number(e.join(''));
 
         if(key == "Enter") {
             
-            if(yearly.length == 4) {
+            if(yearly.length == digits) {
                 let year = stringify(yearly);
                 let index = playlist.findIndex(i => i.year == year);
+
+                if(isJukeBox) {
+                    index = playlist.findIndex(i => i.year == year && i.song);
+                }
 
                 if(index >= 0 && index < playlist.length) {
                     setIndex(index);
@@ -290,12 +293,12 @@ $(window).load(async () => {
 
                 yearly = [];
             }
-            else if(yearly.length < 4) {
+            else if(yearly.length < digits) {
                 showYear();
                 yearly = [];
             }
         }
-        else if(yearly.length < 4) {
+        else if(yearly.length < digits) {
             yearly.push(Number(key));
             showYear(stringify(yearly));
         }
@@ -325,13 +328,13 @@ $(window).load(async () => {
     }
 
     function playVideo() {
-        let ids = playlist.map(i => i.id),
+        let ids = playlist.filter(i => !i.song).map(i => i.id);
+
+        ids.shuffle();
+
+        let min = 0,
             max = ids.length - 1,
-            min = 0;
-
-        jukeBox.shuffle(ids);
-
-        let pos = Math.random() * (max - min) + min,
+            pos = Math.random() * (max - min) + min,
             id = ids[ Math.floor(pos) ],
             index = playlist.findIndex(i => i.id == id);
         
@@ -351,6 +354,15 @@ $(window).load(async () => {
         state.time = time;
     }
 
+    function shuffle() {
+        for(let k = 0; k < 50; k++) {
+            for (let i = this.length - 1; i > 0; i--) {
+                let j = Math.floor(Math.random() * (i + 1));
+                [this[i], this[j]] = [this[j], this[i]];
+            }
+        }
+    }
+
     function handleKeys(e) {
         let code = e.key.toUpperCase();
 
@@ -366,11 +378,11 @@ $(window).load(async () => {
             return;
         }
 
-        if(code == " ") {
+        if(code == "R") {
             return playVideo();
         }
 
-        if(code == "A") {
+        if(code == "A" || e.key == "F1") {
             return showAbout();
         }
 
@@ -382,8 +394,12 @@ $(window).load(async () => {
             return toggleJukeBox();
         }
 
-        if(code == "P") {
+        if(code == "P" || code == " ") {
             return togglePause();
+        }
+
+        if(e.key == "Escape") {
+            return $("about").attr("show", false);
         }
 
         if(e.key == "ArrowUp" || e.key == "ArrowDown") {

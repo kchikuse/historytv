@@ -16,7 +16,7 @@ body {
     background-image: url(../images/static.gif);
     background-color: black;
     user-select: none;
-    cursor: none;
+    /* cursor: none; */
     color: white;
 }
 
@@ -125,12 +125,13 @@ about {
     justify-items: center;
     align-items: center;
     align-content: center;
-    background-image: url(../images/static.gif);
     display: none;
     animation: fadeIn ease .5s;
 }
 about[show="true"] {
     display: grid;
+    background-color: rgba(255, 255, 255, .15);  
+    backdrop-filter: blur(15px);
 }
 
 about label {
